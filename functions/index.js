@@ -19,6 +19,7 @@ const dbRef = db.collection('Cards');
 var currentCardNum = '';
 var currentCardPin = '';
 var currentCardLocked = false;
+var currentBalance='';
 
 
 app.intent('Card Number', (conv, {number}) => {
@@ -26,10 +27,11 @@ app.intent('Card Number', (conv, {number}) => {
     const currRef = dbRef.doc(theCardNumber);
     return currRef.get()
            .then((snapshot) => {
-                const {cardNumber, cardPin, isLocked} = snapshot.data();
+                const {balance, cardNumber, cardPin, isLocked} = snapshot.data();
                 currentCardNum = cardNumber;
                 currentCardPin = cardPin;
                 currentCardLocked = isLocked;
+                currentBalance=balance;
                 conv.ask('Your card ending in ' + theCardNumber + ' has been found. Please enter this cards PIN to confirm');
                 return null;
             }).catch((e) => {
@@ -46,7 +48,7 @@ app.intent('Card Pin', (conv, {number}) => {
         } else {
            conv.close('The PIN you entered is incorrect. Goodbye.');
         }
-    
+
 });
 
 
@@ -73,6 +75,21 @@ app.intent('Unlock Card', (conv) => {
 });
 
 
+app.intent('Make Payment', (conv, {number})=> {
+    if (currentCardLocked) {
+      conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. Good bye!');
+      return null;
+    }else{
+      var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
+      conv.ask('Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment));
+      const amountPaid = number.toString();
+      var newBal=parseFloat(currentBalance) - parseFloat(amountPaid);
+      var updateSingle = currBal.update({balance: String(newBal)});
+      conv.ask('Your payment of $ ' + String(amountPaid) + 'has been issued. Your new current balance is $' + String(newBal));
+      conv.ask('Anything else you need?');
+    }
+});
+
 app.intent('Search Transaction', (conv, {Product}) => {
            const theProduct = Product.toLowerCase()
            const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
@@ -84,12 +101,12 @@ app.intent('Search Transaction', (conv, {Product}) => {
                     conv.ask('Anything else you need?');
                     return null;
                 }
-                 
+
                 snapshot.forEach(doc => {
                     const {Date, Item, Price, Timestamp} = doc.data();
                     theResponse = theResponse + 'There was a transaction on ' + Date + ' for $' + Price + '. ';
                 });
-                 
+
                 theResponse = theResponse + 'Anything else you need?';
                 conv.ask(theResponse);
                 return null;
@@ -105,7 +122,7 @@ app.intent('Current Balance', (conv) => {
            const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
            var theTotalPrice = 0.0;
            return currRef.get()
-           .then((snapshot) => {                 
+           .then((snapshot) => {
                 snapshot.forEach(doc => {
                     const {Date, Item, Price, Timestamp} = doc.data();
                     theTotalPrice = theTotalPrice + parseFloat(Price);
@@ -131,7 +148,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 
 	console.log(theNumber);
 	console.log(DateString);
-	
+
 	if (DateString === 'day' || DateString === 'night') {
 		timeToCheck = timeToCheck - 24*60*60;
 	}
@@ -141,7 +158,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 	if (DateString === 'month') {
 		timeToCheck = timeToCheck - 24*60*60*7*4;
 	}
-	
+
 	if (DateString === 'days' || DateString === 'nights') {
 		timeToCheck = timeToCheck - 24*60*60*theNumber;
 	}
@@ -151,8 +168,8 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 	if (DateString === 'months') {
 		timeToCheck = timeToCheck - 24*60*60*7*4*theNumber;
 	}
-	
-	
+
+
 	const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
     return currRef.where('Timestamp', '>=', timeToCheck).get()
            .then((snapshot) => {
@@ -161,12 +178,12 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
                     conv.ask('Anything else you need?');
                     return null;
                 }
-                 
+
                 snapshot.forEach(doc => {
                     const {Date, Item, Price, Timestamp} = doc.data();
                     theResponse = theResponse + 'There was a transaction on ' + Date + ' for $' + Price + '. ';
                 });
-                 
+
                 theResponse = theResponse + 'Anything else you need?';
                 conv.ask(theResponse);
                 return null;
@@ -177,7 +194,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
             });
 
 
-       
+
 });
 
 
