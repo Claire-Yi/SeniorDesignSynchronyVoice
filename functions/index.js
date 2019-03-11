@@ -201,7 +201,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 
 app.intent('Change Pin', (conv, {theNumber}) => {
 	const currRef = dbRef.doc(currentCardNum.toString());
-  if(theNumber.toString() != ''){
+  if(theNumber.toString() !== ''){
     var updateSingle = currRef.update({cardPin: theNumber.toString()});
 	  conv.ask('Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need, ' + currentName +'?');
   }else{
