@@ -26,6 +26,7 @@ var currentName='';
 var today= new Date();
 var time=today.getHours();
 var greeting='';
+var cardChecked=false;
 
 
 app.intent('Card Number', (conv, {number}) => {
@@ -40,6 +41,7 @@ app.intent('Card Number', (conv, {number}) => {
                 currentBalance=balance;
                 currentName=name;
                 conv.ask('Your card ending in ' + theCardNumber + ' has been found, ' + currentName +'. Please enter this cards PIN to confirm');
+                cardChecked=true;
                 return null;
             }).catch((e) => {
                 conv.close('The card ending in ' + theCardNumber + ' has not been found.');
@@ -48,14 +50,17 @@ app.intent('Card Number', (conv, {number}) => {
 });
 
 app.intent('Card Pin', (conv, {number}) => {
+        var response='';
         const actualPin = currentCardPin;
         const pinToCheck = number.toString();
-        if (pinToCheck === actualPin) {
-           conv.ask('Your PIN has been confirmed. What would you like to know about this card?');
+        if ((pinToCheck === actualPin) && cardChecked) {
+           response='Your PIN has been confirmed. What would you like to know about this card?';
+        } else if ((pinToCheck !== actualPin) && cardChecked){
+           response='The PIN you entered is incorrect. Please try again. ';
         } else {
-           conv.close('The PIN you entered is incorrect. Please try again.');
-           return null;
+          reponse='Oops, something went wrong. Please try again. ';
         }
+        conv.ask(response);
 
 });
 
@@ -88,11 +93,11 @@ app.intent('Unlock Card', (conv) => {
 app.intent('Search Transaction', (conv, {Product}) => {
            const theProduct = Product.toLowerCase()
            const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
-           var theResponse = 'In regards to ' + theProduct + ': ';
+           var theResponse = '';
            return currRef.where('Item', '==', theProduct).get()
            .then((snapshot) => {
                 if (snapshot.empty) {
-                    conv.ask('The card ending in ' + currentCardNum.toString() + ' has no recent transactions regarding ' + theProduct);
+                    conv.ask('Hmm. It looks like there are no spending transactions regarding ' + theProduct);
                     conv.ask('Anything else you need?');
                     return null;
                 }
@@ -122,7 +127,7 @@ app.intent('Current Balance', (conv) => {
                     const {Date, Item, Price, Timestamp} = doc.data();
                     theTotalPrice = theTotalPrice + parseFloat(Price);
                 });
-				theTotalPrice = Math.round(theTotalPrice * 100) / 100;
+				        theTotalPrice = Math.round(theTotalPrice * 100) / 100;
                 conv.ask('You owe $' + String(theTotalPrice) + '. What would you like to do, ' + currentName + '?');
                 return null;
             }).catch((e) => {
@@ -196,8 +201,13 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 
 app.intent('Change Pin', (conv, {theNumber}) => {
 	const currRef = dbRef.doc(currentCardNum.toString());
+  if(theNumber.toString() != ''){
     var updateSingle = currRef.update({cardPin: theNumber.toString()});
-	conv.ask('Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need, ' + currentName +'?');
+	  conv.ask('Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need, ' + currentName +'?');
+  }else{
+    conv.ask("Oops, I didn't catch that! Please try again. ");
+    return null;
+  }
 });
 
 
@@ -227,7 +237,7 @@ app.intent('Help', (conv, input)=> {
     "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
   }
   response=greeting + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
-  response=response+ 'What would you like to do?';
+  response=response+ 'What would you like to do '+ currentName + '?';
   conv.ask(response);
 });
 
@@ -241,7 +251,7 @@ app.intent('Default Welcome Intent', (conv) => {
   }else if(time <23){
     greeting='Good evening! ';
   }else{
-    greeting='Hi! ';
+    greeting='Hi! (this is for debugging, time is '+ time.toString() +' )';
   }
   conv.ask(greeting+'Please say the last four digits of your card number. ');
 });
