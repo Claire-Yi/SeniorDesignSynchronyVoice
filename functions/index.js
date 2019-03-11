@@ -39,7 +39,7 @@ app.intent('Card Number', (conv, {number}) => {
                 currentCardLocked = isLocked;
                 currentBalance=balance;
                 currentName=name;
-                conv.ask('Your card ending in ' + theCardNumber + ' has been found.' + currentName +'Please enter this cards PIN to confirm');
+                conv.ask('Your card ending in ' + theCardNumber + ' has been found, ' + currentName +'. Please enter this cards PIN to confirm');
                 return null;
             }).catch((e) => {
                 conv.close('The card ending in ' + theCardNumber + ' has not been found.');
@@ -123,7 +123,7 @@ app.intent('Current Balance', (conv) => {
                     theTotalPrice = theTotalPrice + parseFloat(Price);
                 });
 				theTotalPrice = Math.round(theTotalPrice * 100) / 100;
-                conv.ask('You owe $' + String(theTotalPrice) + '. What would you like to do' + currentName + '?');
+                conv.ask('You owe $' + String(theTotalPrice) + '. What would you like to do, ' + currentName + '?');
                 return null;
             }).catch((e) => {
                 console.log('error:', e);
@@ -184,7 +184,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
                 return null;
             }).catch((e) => {
                 console.log('error:', e);
-                conv.close('There was an error, please try again' + currentName + '.');
+                conv.close('There was an error, please try again, ' + currentName + '.');
                 return null;
             });
 
@@ -197,50 +197,53 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 app.intent('Change Pin', (conv, {theNumber}) => {
 	const currRef = dbRef.doc(currentCardNum.toString());
     var updateSingle = currRef.update({cardPin: theNumber.toString()});
-	conv.ask('Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need?');
+	conv.ask('Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need, ' + currentName +'?');
 });
 
 
 
 app.intent('Make Payment', (conv, {number})=> {
+    var response='';
     if (currentCardLocked) {
-      conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. Good bye!');
+      conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. Good bye! ');
       return null;
     }else{
       var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
-      conv.ask('Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment));
+      response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment);
       const amountPaid = number.toString();
       var newBal=parseFloat(currentBalance) - parseFloat(amountPaid);
       var updateSingle = currBal.update({balance: String(newBal)});
-      conv.ask('Your payment of $ ' + String(amountPaid) + 'has been issued. Your new current balance is $' + String(newBal));
-      conv.ask('Anything else you need?');
+      response=response+'Your payment of $ ' + String(amountPaid) + 'has been issued. Your new current balance is $' + String(newBal);
+      conv.ask(response+'Anything else you need?');
       return null;
     }
 });
 
 
 app.intent('Help', (conv, input)=> {
+  var response='';
   if (input === 'Who are you?') {
-  conv.ask(greeting +  "I'm a virtual financial assistant." +
-    "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier");
-  }else{
-    conv.ask(greeting)
+    response=greeting +  "I'm a virtual financial assistant." +
+    "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
   }
-  conv.ask('I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions.');
-  conv.ask('What would you like to do?');
+  response=greeting + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
+  response=response+ 'What would you like to do?';
+  conv.ask(response);
 });
 
 app.intent('Default Welcome Intent', (conv) => {
-  if(time > 4 && time < 12){
-    greeting='Good morning';
-  }else if(time >=12 && time <18){
-    greeting='Good afternoon';
-  }else if(time >=18 && time <0){
-    greeting='Good evening';
+  if (time < 5){
+    greeting='Hello! ';
+  } else if(time < 12){
+    greeting='Good morning! ';
+  }else if(time <18){
+    greeting='Good afternoon! ';
+  }else if(time <23){
+    greeting='Good evening! ';
   }else{
-    greeting='Hello';
+    greeting='Hi! ';
   }
-  conv.ask(greeting+'Please say the last four digits of your card number.');
+  conv.ask(greeting+'Please say the last four digits of your card number. ');
 });
 
 
