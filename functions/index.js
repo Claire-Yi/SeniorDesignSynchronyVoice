@@ -24,9 +24,10 @@ var currentName='';
 
 
 var today= new Date();
-var time=today.getHours();
+var time=today.getTime() ;
 var greeting='';
 var cardChecked=false;
+var pinConfirmed=false;
 
 
 app.intent('Card Number', (conv, {number}) => {
@@ -55,6 +56,7 @@ app.intent('Card Pin', (conv, {number}) => {
         const pinToCheck = number.toString();
         if ((pinToCheck === actualPin) && cardChecked) {
            response='Your PIN has been confirmed. What would you like to know about this card?';
+           pinConfirmed=true;
         } else if ((pinToCheck !== actualPin) && cardChecked){
            response='The PIN you entered is incorrect. Please try again. ';
         } else {
@@ -66,31 +68,42 @@ app.intent('Card Pin', (conv, {number}) => {
 
 
 app.intent('Lock Card', (conv) => {
-	if (currentCardLocked) {
-		conv.ask('Your card ending in ' + currentCardNum.toString() + ' was already locked. Is there anything else you need?');
+  var response='';
+  if (!pinConfirmed){
+    response='You cannot lock your card before entering the pin! Please say the pin number associated with your card first. ';
+  } else if (currentCardLocked && pinConfirmed) {
+		response='Your card ending in ' + currentCardNum.toString() + ' was already locked. Is there anything else you need?';
 	} else {
 		const currRef = dbRef.doc(currentCardNum.toString());
         var updateSingle = currRef.update({isLocked: true});
         currentCardLocked = true;
-		conv.ask('Your card ending in ' + currentCardNum.toString() + ' is now locked. You can call 8608178983 to report a fraud.');
+		response='Your card ending in ' + currentCardNum.toString() + ' is now locked. You can call 8608178983 to report a fraud.';
 	}
+  conv.ask(response);
 });
 
 app.intent('Unlock Card', (conv) => {
-    if (currentCardLocked) {
+  var response='';
+  if (!pinConfirmed){
+    response='You cannot unlock your card before entering the pin! Please say the pin number associated with your card first. ';
+  } else if (currentCardLocked && pinConfirmed) {
         const currRef = dbRef.doc(currentCardNum.toString());
         var updateSingle = currRef.update({isLocked: false});
         currentCardLocked = false;
-        conv.ask('Your card ending in ' + currentCardNum.toString() + ' is now unlocked. Is there anything else you need?');
+        response='Your card ending in ' + currentCardNum.toString() + ' is now unlocked. Is there anything else you need?';
     } else {
-        conv.ask('Your card ending in ' + currentCardNum.toString() + ' was already unlocked. Is there anything else I can help with?');
+        response='Your card ending in ' + currentCardNum.toString() + ' was already unlocked. Is there anything else I can help with?';
     }
+    conv.ask(response);
 });
 
 
 
 
 app.intent('Search Transaction', (conv, {Product}) => {
+          if (!pinConfirmed){
+              conv.ask('You cannot search transaction before entering the pin! Please say the pin number associated with your card first. ');
+          }else{
            const theProduct = Product.toLowerCase()
            const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
            var theResponse = '';
@@ -115,10 +128,14 @@ app.intent('Search Transaction', (conv, {Product}) => {
                 conv.close('There was an error, please try again.');
                 return null;
             });
+          }
 });
 
 
 app.intent('Current Balance', (conv) => {
+      if (!pinConfirmed){
+          conv.ask('You cannot lock your card before entering the pin! Please say the pin number associated with your card first. ');
+      }else {
            const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
            var theTotalPrice = 0.0;
            return currRef.get()
@@ -135,6 +152,7 @@ app.intent('Current Balance', (conv) => {
                 conv.close('There was an error, please try again.');
                 return null;
             });
+          }
 });
 
 app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
@@ -201,11 +219,11 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 
 app.intent('Change Pin', (conv, {theNumber}) => {
 	const currRef = dbRef.doc(currentCardNum.toString());
-  if(theNumber.toString() !== ''){
+  if(theNumber.toString() != ''){
     var updateSingle = currRef.update({cardPin: theNumber.toString()});
 	  conv.ask('Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need, ' + currentName +'?');
   }else{
-    conv.ask("Oops, I didn't catch that! Please try again. ");
+    conv.ask("Oops, sorry I didn't get that! Please try again. ");
     return null;
   }
 });
@@ -218,21 +236,22 @@ app.intent('Make Payment', (conv, {number})=> {
       conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. Good bye! ');
       return null;
     }else{
-      var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
-      response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment);
+      const currRef = dbRef.doc(currentCardNum.toString());
+      //var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
+      //response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment);
       const amountPaid = number.toString();
       var newBal=parseFloat(currentBalance) - parseFloat(amountPaid);
-      var updateSingle = currBal.update({balance: String(newBal)});
-      response=response+'Your payment of $ ' + String(amountPaid) + 'has been issued. Your new current balance is $' + String(newBal);
+      var updateSingle = currRef.update({balance: newBal.toString()});
+      response=response+'Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString();
       conv.ask(response+'Anything else you need?');
       return null;
     }
 });
 
 
-app.intent('Help', (conv, input)=> {
+app.intent('Help', (conv, {Help_input})=> {
   var response='';
-  if (input === 'Who are you?') {
+  if (Help_input == 'Who are you?') {
     response=greeting +  "I'm a virtual financial assistant." +
     "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
   }
@@ -251,7 +270,7 @@ app.intent('Default Welcome Intent', (conv) => {
   }else if(time <23){
     greeting='Good evening! ';
   }else{
-    greeting='Hi! (this is for debugging, time is '+ time.toString() +' )';
+    greeting='Hi! (this is for debugging, time is '+ time.toString() +' ) ';
   }
   conv.ask(greeting+'Please say the last four digits of your card number. ');
 });
