@@ -271,7 +271,7 @@ app.intent('Make Payment', (conv, {number})=> {
     //var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
     //response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment);
     const amountPaid = number.toString();
-    var newBal=parseFloat(currentBalance) - number;
+    var newBal=Number(currentBalance) - Number(number);
     newBal=newBal.toFixed(2);
     var updateSingle = currRef.update({balance: newBal.toString()});
     currentBalance=newBal;
@@ -318,32 +318,32 @@ app.intent('Make Payment', (conv, {number})=> {
   });
 
 
-app.intent('Good bye', (conv) =>{
+  app.intent('Good bye', (conv) =>{
 
-  var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
-  if (time < 5){
-    greeting=' Bye for now.. '+debugmsg;
-  } else if(time < 10){
-    greeting=' Have a good day! '+debugmsg;
-  }else if(time <19){
-    greeting=' Enjoy the rest of your day! '+debugmsg;
-  }else if(time <23){
-    greeting=' Have a good night! '+debugmsg;
-  }else{
-    greeting=' Until next time.. ' +debugmsg;
-  }
-  conv.ask(greeting+currentName);
-  var currentCardNum = '';
-  var currentCardPin = '';
-  var currentCardLocked = false;
-  var currentBalance='';
-  var currentName='';
-  var cardChecked=false;
-  var pinConfirmed=false;
-  var welcomed=false;
-  return null;
+    var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
+    if (time < 5){
+      greeting=' Bye for now.. '+debugmsg;
+    } else if(time < 10){
+      greeting=' Have a good day! '+debugmsg;
+    }else if(time <19){
+      greeting=' Enjoy the rest of your day! '+debugmsg;
+    }else if(time <23){
+      greeting=' Have a good night! '+debugmsg;
+    }else{
+      greeting=' Until next time.. ' +debugmsg;
+    }
+    conv.ask(greeting+currentName);
+    var currentCardNum = '';
+    var currentCardPin = '';
+    var currentCardLocked = false;
+    var currentBalance='';
+    var currentName='';
+    var cardChecked=false;
+    var pinConfirmed=false;
+    var welcomed=false;
+    return null;
 
-});
+  });
 
 
   // Set the DialogflowApp object to handle the HTTPS POST request.
