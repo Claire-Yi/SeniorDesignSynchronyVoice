@@ -24,7 +24,7 @@ var currentName='';
 
 
 var todayDate= new Date();
-var time=todayDate.getHours()-5;
+var time=todayDate.getHours()-3;
 var greeting='';
 var cardChecked=false;
 var pinConfirmed=false;
@@ -124,7 +124,7 @@ app.intent('Search Transaction', (conv, {Product}) => {
     return currRef.where('Item', '==', theProduct).get()
     .then((snapshot) => {
       if (snapshot.empty) {
-        conv.ask('Hmm. It looks like there are no recent purchases on ' + theProduct + '. ');
+        conv.ask('Hmm. It looks like there are no recent purchases on ' + Product + '. ');
         conv.ask('Anything else you need?');
         return null;
       }
@@ -278,73 +278,72 @@ app.intent('Make Payment', (conv, {number})=> {
     response='Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString()+'. ';
     response=response+' Thank you for your payment. What else would you like to do?';
   }else{
-      response="Sorry! I didn't catch that. Please say something like, 'I want to make a payment of $25'.";
-    }
-    conv.ask(response);
-    return null;
-  });
+    response="Sorry! I didn't catch that. Please say something like, 'I want to make a payment of $25'.";
+  }
+  conv.ask(response);
+  return null;
+});
 
 
-  app.intent('Help', (conv, {Help_input})=> {
-    var response='';
-    if(welcomed===false){
-      response=greeting;
-    }
-    if (Help_input !== '') {
-      response= response +"I'm a virtual financial assistant." +
-      "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
-    }
-    response=response + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
-    response=response+ "You can say 'pay my bill' to make a payment or 'How much I spent on gas?' to check your recent gas purchases. ";
-    response=response+ 'What would you like to do'+ currentName + '?';
-    conv.ask(response);
-  });
+app.intent('Help', (conv, {Help_input})=> {
+  var response='';
+  if(welcomed===false){
+    response=greeting;
+  }
+  if (Help_input !== '') {
+    response= response +"I'm a virtual financial assistant." +
+    " I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier. ";
+  }
+  response=response + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
+  response=response+ "You can say 'pay my bill' to make a payment or 'How much I spent on gas?' to check your recent gas purchases. ";
+  response=response+ 'What would you like to do'+ currentName + '?';
+  conv.ask(response);
+});
 
-  app.intent('Default Welcome Intent', (conv) => {
-    var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
-    if (time < 5){
-      greeting=' Hello! '+debugmsg;
-    } else if(time < 12){
-      greeting=' Good morning! '+debugmsg;
-    }else if(time <18){
-      greeting=' Good afternoon! '+debugmsg;
-    }else if(time <23){
-      greeting=' Good evening! '+debugmsg;
-    }else{
-      greeting=' Hi! ' +debugmsg;
-    }
-    welcomed=true;
-    conv.ask(greeting+'Please say the last four digits of your card number. ');
-  });
-
-
-  app.intent('Good bye', (conv) =>{
-
-    var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
-    if (time < 5){
-      greeting=' Bye for now.. '+debugmsg;
-    } else if(time < 10){
-      greeting=' Have a good day! '+debugmsg;
-    }else if(time <19){
-      greeting=' Enjoy the rest of your day! '+debugmsg;
-    }else if(time <23){
-      greeting=' Have a good night! '+debugmsg;
-    }else{
-      greeting=' Until next time.. ' +debugmsg;
-    }
-    conv.ask(greeting+currentName);
-    var currentCardNum = '';
-    var currentCardPin = '';
-    var currentCardLocked = false;
-    var currentBalance='';
-    var currentName='';
-    var cardChecked=false;
-    var pinConfirmed=false;
-    var welcomed=false;
-    return null;
-
-  });
+app.intent('Default Welcome Intent', (conv) => {
+  var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
+  if (time < 5){
+    greeting=' Hello! '+debugmsg;
+  } else if(time < 12){
+    greeting=' Good morning! '+debugmsg;
+  }else if(time <18){
+    greeting=' Good afternoon! '+debugmsg;
+  }else if(time <23){
+    greeting=' Good evening! '+debugmsg;
+  }else{
+    greeting=' Hi! ' +debugmsg;
+  }
+  welcomed=true;
+  conv.ask(greeting+'Please say the last four digits of your card number. ');
+});
 
 
-  // Set the DialogflowApp object to handle the HTTPS POST request.
-  exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
+app.intent('Good bye', (conv) =>{
+
+  var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
+  if (time < 5){
+    greeting=' Bye for now.. '+debugmsg;
+  } else if(time < 10){
+    greeting=' Have a good day! '+debugmsg;
+  }else if(time <19){
+    greeting=' Enjoy the rest of your day! '+debugmsg;
+  }else if(time <23){
+    greeting=' Have a good night! '+debugmsg;
+  }else{
+    greeting=' Until next time.. ' +debugmsg;
+  }
+
+  var currentCardNum = '';
+  var currentCardPin = '';
+  var currentCardLocked = false;
+  var currentBalance='';
+  var currentName='';
+  var cardChecked=false;
+  var pinConfirmed=false;
+  var welcomed=false;
+  conv.close(greeting);
+});
+
+
+// Set the DialogflowApp object to handle the HTTPS POST request.
+exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
