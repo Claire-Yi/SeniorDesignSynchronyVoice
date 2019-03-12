@@ -24,7 +24,7 @@ var currentName='';
 
 
 var today= new Date();
-var time=today.getTime() ;
+var time=today.getHours()-5;
 var greeting='';
 var cardChecked=false;
 var pinConfirmed=false;
@@ -69,7 +69,7 @@ app.intent('Card Pin', (conv, {number}) => {
 
 app.intent('Lock Card', (conv) => {
   var response='';
-  if (!pinConfirmed){
+  if (pinConfirmed===false){
     response='You cannot lock your card before entering the pin! Please say the pin number associated with your card first. ';
   } else if (currentCardLocked && pinConfirmed) {
 		response='Your card ending in ' + currentCardNum.toString() + ' was already locked. Is there anything else you need?';
@@ -84,7 +84,7 @@ app.intent('Lock Card', (conv) => {
 
 app.intent('Unlock Card', (conv) => {
   var response='';
-  if (!pinConfirmed){
+  if (pinConfirmed===false){
     response='You cannot unlock your card before entering the pin! Please say the pin number associated with your card first. ';
   } else if (currentCardLocked && pinConfirmed) {
         const currRef = dbRef.doc(currentCardNum.toString());
@@ -101,7 +101,7 @@ app.intent('Unlock Card', (conv) => {
 
 
 app.intent('Search Transaction', (conv, {Product}) => {
-          if (!pinConfirmed){
+          if (pinConfirmed===false){
               conv.ask('You cannot search transaction before entering the pin! Please say the pin number associated with your card first. ');
           }else{
            const theProduct = Product.toLowerCase()
@@ -110,7 +110,7 @@ app.intent('Search Transaction', (conv, {Product}) => {
            return currRef.where('Item', '==', theProduct).get()
            .then((snapshot) => {
                 if (snapshot.empty) {
-                    conv.ask('Hmm. It looks like there are no spending transactions regarding ' + theProduct);
+                    conv.ask('Hmm. It looks like there are no spending transactions regarding ' + theProduct + '. ');
                     conv.ask('Anything else you need?');
                     return null;
                 }
@@ -233,19 +233,23 @@ app.intent('Change Pin', (conv, {theNumber}) => {
 app.intent('Make Payment', (conv, {number})=> {
     var response='';
     if (currentCardLocked) {
-      conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. Good bye! ');
+      response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. ';
       return null;
-    }else{
+    }else if (number !== ''){
       const currRef = dbRef.doc(currentCardNum.toString());
       //var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
       //response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment);
       const amountPaid = number.toString();
       var newBal=parseFloat(currentBalance) - parseFloat(amountPaid);
+      newBal=parseFloat(newBal).toFixed(2);
       var updateSingle = currRef.update({balance: newBal.toString()});
-      response=response+'Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString();
-      conv.ask(response+'Anything else you need?');
+      response='Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString();
+      response=response+' Thank you for your payment. What else would you like to do?';
       return null;
+    }else {
+      response='Please say something like, I want to make a payment of $30.';
     }
+    conv.ask(response);
 });
 
 
@@ -256,7 +260,7 @@ app.intent('Help', (conv, {Help_input})=> {
     "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
   }
   response=greeting + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
-  response=response+ 'What would you like to do '+ currentName + '?';
+  response=response+ 'What would you like to do, '+ currentName + '?' + 'for debugging (help input is ' + Help_input;
   conv.ask(response);
 });
 
