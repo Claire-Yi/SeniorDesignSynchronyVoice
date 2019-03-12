@@ -275,7 +275,7 @@ app.intent('Make Payment', (conv, {number})=> {
     var updateSingle = currRef.update({balance: newBal.toString()});
     response='Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString();
     response=response+' Thank you for your payment. What else would you like to do?';
-    else{
+  }else{
       response="Sorry! I didn't catch that. Please say something like, 'I want to make a payment of $25'.";
     }
     conv.ask(response);
