@@ -160,14 +160,18 @@ app.intent('Current Balance', (conv) => {
     //      theTotalPrice = theTotalPrice + parseFloat(Price);
     //    });
     //    theTotalPrice = Math.round(theTotalPrice * 100) / 100;
-    conv.ask('You owe $' + currentBalance.toString() + '. What would you like to do' + currentName + '?');
+    if(currentBalance.toString() !== ''){
+      conv.ask('You owe $' + currentBalance.toString() + '. What would you like to do' + currentName + '?');
+    }else{
+      conv.close('Sorry, there was an error, please try again.');
+    }
     return null;
-  }).catch((e) => {
-    console.log('error:', e);
-    conv.close('There was an error, please try again.');
-    return null;
-  });
-}
+    //}).catch((e) => {
+    //  console.log('error:', e);
+    //conv.close('There was an error, please try again.');
+    //return null;
+    //  });
+  }
 });
 
 app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
