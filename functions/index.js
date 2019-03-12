@@ -28,6 +28,7 @@ var time=todayDate.getHours();
 var greeting='';
 var cardChecked=false;
 var pinConfirmed=false;
+var welcomed=false;
 
 
 app.intent('Card Number', (conv, {number}) => {
@@ -279,7 +280,10 @@ app.intent('Make Payment', (conv, {number})=> {
 
 
   app.intent('Help', (conv, {Help_input})=> {
-    var response=greeting;
+    var response='';
+    if(welcomed===false){
+      response=greeting;
+    }
     if (Help_input.toLowerCase() === 'who are you?') {
       response= response +"I'm a virtual financial assistant." +
       "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
@@ -302,6 +306,7 @@ app.intent('Make Payment', (conv, {number})=> {
     }else{
       greeting=' Hi! (this is for debugging, time is '+ time.toString() +' ) ';
     }
+    welcomed=true;
     conv.ask(greeting+'Please say the last four digits of your card number. ');
   });
 
