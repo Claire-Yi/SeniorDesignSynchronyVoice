@@ -219,7 +219,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
 
 app.intent('Change Pin', (conv, {theNumber}) => {
 	const currRef = dbRef.doc(currentCardNum.toString());
-  if(theNumber.toString() != ''){
+  if(theNumber.toString() !== ''){
     var updateSingle = currRef.update({cardPin: theNumber.toString()});
 	  conv.ask('Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need, ' + currentName +'?');
   }else{
@@ -251,7 +251,7 @@ app.intent('Make Payment', (conv, {number})=> {
 
 app.intent('Help', (conv, {Help_input})=> {
   var response='';
-  if (Help_input == 'Who are you?') {
+  if (Help_input === 'Who are you?') {
     response=greeting +  "I'm a virtual financial assistant." +
     "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
   }
