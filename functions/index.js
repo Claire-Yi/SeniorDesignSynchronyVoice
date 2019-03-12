@@ -24,7 +24,7 @@ var currentName='';
 
 
 var todayDate= new Date();
-var time=todayDate.getHours();
+var time=todayDate.getHours()-5;
 var greeting='';
 var cardChecked=false;
 var pinConfirmed=false;
@@ -71,18 +71,19 @@ app.intent('Card Pin', (conv, {number}) => {
 
 
 app.intent('Lock Card', (conv) => {
+  var fraud='You can call 8608178983 if you want to report a fraud. '
   var response='';
   if (cardChecked===false){
     response='Please say the last four digits of your card. ';
   } else if (pinConfirmed===false){
     response='You cannot lock your card before entering the pin! Please say the pin number of your card first. ';
   } else if (currentCardLocked && pinConfirmed) {
-    response='Your card ending in ' + currentCardNum.toString() + ' was already locked. Is there anything else you need?';
+    response='Your card ending in ' + currentCardNum.toString() + ' was already locked. '+ fraud + 'Is there anything else you need?';
   } else {
     const currRef = dbRef.doc(currentCardNum.toString());
     var updateSingle = currRef.update({isLocked: true});
     currentCardLocked = true;
-    response='Your card ending in ' + currentCardNum.toString() + ' is now locked. You can call 8608178983 to report a fraud.';
+    response='Your card ending in ' + currentCardNum.toString() + ' is now locked. '+ fraud;
   }
   conv.ask(response);
   return null;
@@ -246,7 +247,7 @@ app.intent('Change Pin', (conv, {theNumber}) => {
     const currRef = dbRef.doc(currentCardNum.toString());
     if(theNumber.toString() !== ''){
       var updateSingle = currRef.update({cardPin: theNumber.toString()});
-      response='Your pin has been changed to ' + theNumber.toString() +' Is there anything else you need' + currentName +'?';
+      response='Your pin has been changed to ' + theNumber.toString() +'. Is there anything else you need' + currentName +'?';
     }else{
       response="Oops, sorry I didn't get that! Please try again. ";
     }
@@ -270,12 +271,13 @@ app.intent('Make Payment', (conv, {number})=> {
     //var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
     //response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment);
     const amountPaid = number.toString();
-    var newBal=parseFloat(currentBalance) - parseFloat(amountPaid);
+    var newBal=parseFloat(currentBalance) - number;
     newBal=newBal.toFixed(2);
     var updateSingle = currRef.update({balance: newBal.toString()});
-    response='Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString();
+    currentBalance=newBal;
+    response='Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString()+'. ';
     response=response+' Thank you for your payment. What else would you like to do?';
-  }else{
+    else{
       response="Sorry! I didn't catch that. Please say something like, 'I want to make a payment of $25'.";
     }
     conv.ask(response);
@@ -288,7 +290,7 @@ app.intent('Make Payment', (conv, {number})=> {
     if(welcomed===false){
       response=greeting;
     }
-    if (Help_input.toLowerCase() === 'who are you?') {
+    if (Help_input !== '') {
       response= response +"I'm a virtual financial assistant." +
       "I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier";
     }
@@ -299,21 +301,49 @@ app.intent('Make Payment', (conv, {number})=> {
   });
 
   app.intent('Default Welcome Intent', (conv) => {
+    var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
     if (time < 5){
-      greeting=' Hello! ';
+      greeting=' Hello! '+debugmsg;
     } else if(time < 12){
-      greeting=' Good morning! ';
+      greeting=' Good morning! '+debugmsg;
     }else if(time <18){
-      greeting=' Good afternoon! ';
+      greeting=' Good afternoon! '+debugmsg;
     }else if(time <23){
-      greeting=' Good evening! ';
+      greeting=' Good evening! '+debugmsg;
     }else{
-      greeting=' Hi! (this is for debugging, time is '+ time.toString() +' ) ';
+      greeting=' Hi! ' +debugmsg;
     }
     welcomed=true;
     conv.ask(greeting+'Please say the last four digits of your card number. ');
   });
 
+
+app.intent('Good bye', (conv) =>{
+
+  var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
+  if (time < 5){
+    greeting=' Bye for now.. '+debugmsg;
+  } else if(time < 10){
+    greeting=' Have a good day! '+debugmsg;
+  }else if(time <19){
+    greeting=' Enjoy the rest of your day! '+debugmsg;
+  }else if(time <23){
+    greeting=' Have a good night! '+debugmsg;
+  }else{
+    greeting=' Until next time.. ' +debugmsg;
+  }
+  conv.ask(greeting+currentName);
+  var currentCardNum = '';
+  var currentCardPin = '';
+  var currentCardLocked = false;
+  var currentBalance='';
+  var currentName='';
+  var cardChecked=false;
+  var pinConfirmed=false;
+  var welcomed=false;
+  return null;
+
+});
 
 
   // Set the DialogflowApp object to handle the HTTPS POST request.
