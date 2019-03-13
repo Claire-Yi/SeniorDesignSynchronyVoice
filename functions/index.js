@@ -24,7 +24,7 @@ var currentName='';
 
 
 var todayDate= new Date();
-var time=todayDate.getHours()-3;
+var currenttime=todayDate.getHours();
 var greeting='';
 var cardChecked=false;
 var pinConfirmed=false;
@@ -116,7 +116,8 @@ app.intent('Search Transaction', (conv, {Product}) => {
     return null;
   } else if (pinConfirmed===false){
     conv.ask('You cannot search transaction before entering the pin! Please say the pin number of your card first. ');
-    return null;
+  } else if  (currentCardLocked) {
+    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to search your transaction. ');
   }else{
     const theProduct = Product.toLowerCase()
     const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
@@ -151,87 +152,81 @@ app.intent('Current Balance', (conv) => {
     conv.ask('Please say the last four digits of your card. ');
   } else if (pinConfirmed===false){
     conv.ask('You cannot check your balance before entering the pin! Please say the pin number of your card first. ');
+  } else if  (currentCardLocked) {
+    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to check your balance. ');
   }else {
-    //  const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
-    //    var theTotalPrice = 0.0;
-    //    return currRef.get()
-    //  .then((snapshot) => {
-    //    snapshot.forEach(doc => {
-    //      const {Date, Item, Price, Timestamp} = doc.data();
-    //      theTotalPrice = theTotalPrice + parseFloat(Price);
-    //    });
-    //    theTotalPrice = Math.round(theTotalPrice * 100) / 100;
     if(currentBalance.toString() !== ''){
       conv.ask('You owe $' + currentBalance.toString() + '. What would you like to do' + currentName + '?');
     }else{
       conv.close('Sorry, there was an error, please try again.');
     }
     return null;
-    //}).catch((e) => {
-    //  console.log('error:', e);
-    //conv.close('There was an error, please try again.');
-    //return null;
-    //  });
   }
 });
 
 app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
+  if (cardChecked===false){
+    conv.ask('Please say the last four digits of your card. ');
+  } else if (pinConfirmed===false){
+    conv.ask('You cannot check your balance before entering the pin! Please say the pin number of your card first. ');
+  } else if  (currentCardLocked) {
+    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to check your transactions. ');
+  }else {
+    var today = new Date();
+    var currTimeStamp = Math.round((new Date()).getTime() / 1000);
+    var dd = today.getDate();
+    var mm = today.getMonth();
+    var timeToCheck = currTimeStamp;
+    var theResponse = 'In regards to that time frame: ';
 
-  var today = new Date();
-  var currTimeStamp = Math.round((new Date()).getTime() / 1000);
-  var dd = today.getDate();
-  var mm = today.getMonth();
-  var timeToCheck = currTimeStamp;
-  var theResponse = 'In regards to that time frame: ';
+    console.log(theNumber);
+    console.log(DateString);
 
-  console.log(theNumber);
-  console.log(DateString);
-
-  if (DateString === 'day' || DateString === 'night') {
-    timeToCheck = timeToCheck - 24*60*60;
-  }
-  if (DateString === 'week') {
-    timeToCheck = timeToCheck - 24*60*60*7;
-  }
-  if (DateString === 'month') {
-    timeToCheck = timeToCheck - 24*60*60*7*4;
-  }
-
-  if (DateString === 'days' || DateString === 'nights') {
-    timeToCheck = timeToCheck - 24*60*60*theNumber;
-  }
-  if (DateString === 'weeks') {
-    timeToCheck = timeToCheck - 24*60*60*7*theNumber;
-  }
-  if (DateString === 'months') {
-    timeToCheck = timeToCheck - 24*60*60*7*4*theNumber;
-  }
-
-
-  const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
-  return currRef.where('Timestamp', '>=', timeToCheck).get()
-  .then((snapshot) => {
-    if (snapshot.empty) {
-      conv.ask('The card ending in ' + currentCardNum.toString() + ' has no transactions in that timeframe. ');
-      conv.ask('Anything else you need?');
-      return null;
+    if (DateString === 'day' || DateString === 'night') {
+      timeToCheck = timeToCheck - 24*60*60;
+    }
+    if (DateString === 'week') {
+      timeToCheck = timeToCheck - 24*60*60*7;
+    }
+    if (DateString === 'month') {
+      timeToCheck = timeToCheck - 24*60*60*7*4;
     }
 
-    snapshot.forEach(doc => {
-      const {Date, Item, Price, Timestamp} = doc.data();
-      theResponse = theResponse + 'There was a transaction on ' + Date + ' for $' + Price + '. ';
+    if (DateString === 'days' || DateString === 'nights') {
+      timeToCheck = timeToCheck - 24*60*60*theNumber;
+    }
+    if (DateString === 'weeks') {
+      timeToCheck = timeToCheck - 24*60*60*7*theNumber;
+    }
+    if (DateString === 'months') {
+      timeToCheck = timeToCheck - 24*60*60*7*4*theNumber;
+    }
+
+
+    const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
+    return currRef.where('Timestamp', '>=', timeToCheck).get()
+    .then((snapshot) => {
+      if (snapshot.empty) {
+        conv.ask('The card ending in ' + currentCardNum.toString() + ' has no transactions in that timeframe. ');
+        conv.ask('Anything else you need?');
+        return null;
+      }
+
+      snapshot.forEach(doc => {
+        const {Date, Item, Price, Timestamp} = doc.data();
+        theResponse = theResponse + 'There was a transaction on ' + Date + ' for $' + Price + '. ';
+      });
+
+      theResponse = theResponse + 'Anything else you need?';
+      conv.ask(theResponse);
+      return null;
+    }).catch((e) => {
+      console.log('error:', e);
+      conv.close('There was an error, please try again' + currentName + '.');
+      return null;
     });
 
-    theResponse = theResponse + 'Anything else you need?';
-    conv.ask(theResponse);
-    return null;
-  }).catch((e) => {
-    console.log('error:', e);
-    conv.close('There was an error, please try again' + currentName + '.');
-    return null;
-  });
-
-
+  }
 
 });
 
@@ -243,6 +238,8 @@ app.intent('Change Pin', (conv, {theNumber}) => {
     response='Please say the last four digits of your card. ';
   } else if (pinConfirmed===false){
     response='You cannot change your pin before entering the current one! Please say the pin number of your card first. ';
+  }else if  (currentCardLocked) {
+    response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to change your pin. ';
   }else {
     const currRef = dbRef.doc(currentCardNum.toString());
     if(theNumber.toString() !== ''){
@@ -268,14 +265,14 @@ app.intent('Make Payment', (conv, {number})=> {
     response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. ';
   }else if (number !== ''){
     const currRef = dbRef.doc(currentCardNum.toString());
-    //var minPayment=(parseFloat(currentBalance)/100 ) * 1.5;
-    //response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment);
+    var minPayment=(Number(currentBalance)/100 ) * 1.5;
+    response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment)+ '. ';
     const amountPaid = number.toString();
     var newBal=Number(currentBalance) - Number(number);
     newBal=newBal.toFixed(2);
     var updateSingle = currRef.update({balance: newBal.toString()});
     currentBalance=newBal;
-    response='Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString()+'. ';
+    response=response+ 'Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString()+'. ';
     response=response+' Thank you for your payment. What else would you like to do?';
   }else{
     response="Sorry! I didn't catch that. Please say something like, 'I want to make a payment of $25'.";
@@ -292,7 +289,7 @@ app.intent('Help', (conv, {Help_input})=> {
   }
   if (Help_input !== '') {
     response= response +"I'm a virtual financial assistant." +
-    " I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier. ";
+    " I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier.. ";
   }
   response=response + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
   response=response+ "You can say 'pay my bill' to make a payment or 'How much I spent on gas?' to check your recent gas purchases. ";
@@ -301,17 +298,17 @@ app.intent('Help', (conv, {Help_input})=> {
 });
 
 app.intent('Default Welcome Intent', (conv) => {
-  var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
-  if (time < 5){
-    greeting=' Hello! '+debugmsg;
-  } else if(time < 12){
-    greeting=' Good morning! '+debugmsg;
-  }else if(time <18){
-    greeting=' Good afternoon! '+debugmsg;
-  }else if(time <23){
-    greeting=' Good evening! '+debugmsg;
+  //var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
+  if (currenttime < 5){
+    greeting=' Hello! ';
+  } else if(currenttime < 12){
+    greeting=' Good morning! ';
+  }else if(currenttime <18){
+    greeting=' Good afternoon! ';
+  }else if(currenttime <23){
+    greeting=' Good evening! ';
   }else{
-    greeting=' Hi! ' +debugmsg;
+    greeting=' Hi! ';
   }
   welcomed=true;
   conv.ask(greeting+'Please say the last four digits of your card number. ');
@@ -319,28 +316,27 @@ app.intent('Default Welcome Intent', (conv) => {
 
 
 app.intent('Good bye', (conv) =>{
-
-  var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
-  if (time < 5){
-    greeting=' Bye for now.. '+debugmsg;
-  } else if(time < 10){
-    greeting=' Have a good day! '+debugmsg;
-  }else if(time <19){
-    greeting=' Enjoy the rest of your day! '+debugmsg;
-  }else if(time <23){
-    greeting=' Have a good night! '+debugmsg;
+  //var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
+  if (currenttime < 5){
+    greeting=' Bye for now.. ';
+  } else if(currenttime < 10){
+    greeting=' Have a good day! ';
+  }else if(currenttime <19){
+    greeting=' Enjoy the rest of your day! ';
+  }else if(currenttime <23){
+    greeting=' Have a good night! ';
   }else{
-    greeting=' Until next time.. ' +debugmsg;
+    greeting=' Until next time.. ';
   }
 
-  var currentCardNum = '';
-  var currentCardPin = '';
-  var currentCardLocked = false;
-  var currentBalance='';
-  var currentName='';
-  var cardChecked=false;
-  var pinConfirmed=false;
-  var welcomed=false;
+  currentCardNum = '';
+  currentCardPin = '';
+  currentCardLocked = false;
+  currentBalance='';
+  currentName='';
+  cardChecked=false;
+  pinConfirmed=false;
+  welcomed=false;
   conv.close(greeting);
 });
 
