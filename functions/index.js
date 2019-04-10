@@ -26,6 +26,7 @@ var currentName='';
 var todayDate= new Date();
 var currenttime=todayDate.getHours();
 var greeting='';
+var greeting_bye='';
 var cardChecked=false;
 var pinConfirmed=false;
 var welcomed=false;
@@ -125,10 +126,18 @@ app.intent('Search Transaction', (conv, {Product}) => {
     return currRef.where('Item', '==', theProduct).get()
     .then((snapshot) => {
       if (snapshot.empty) {
-        conv.ask('Hmm. It looks like there are no recent purchases on ' + Product + '. ');
+        conv.ask('Hmm. It looks like there are no recent purchases on ' + theProduct + '. ');
         conv.ask('Anything else you need?');
         return null;
       }
+
+      var totalSpending=0;
+
+      snapshot.forEach(doc => {
+        const {Date, Item, Price, Timestamp} = doc.data();
+        totalSpending+=Price;
+      });
+        conv.ask('You spent $'+ totalSpending+ ' on ' + Product+'. ');
 
       snapshot.forEach(doc => {
         const {Date, Item, Price, Timestamp} = doc.data();
@@ -208,7 +217,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
     .then((snapshot) => {
       if (snapshot.empty) {
         conv.ask('The card ending in ' + currentCardNum.toString() + ' has no transactions in that timeframe. ');
-        conv.ask('Anything else you need?');
+        conv.ask('What else would you like to do?');
         return null;
       }
 
@@ -217,7 +226,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
         theResponse = theResponse + 'There was a transaction on ' + Date + ' for $' + Price + '. ';
       });
 
-      theResponse = theResponse + 'Anything else you need?';
+      theResponse = theResponse + 'Anything else I can help with?';
       conv.ask(theResponse);
       return null;
     }).catch((e) => {
@@ -265,14 +274,14 @@ app.intent('Make Payment', (conv, {number})=> {
     response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. ';
   }else if (number !== ''){
     const currRef = dbRef.doc(currentCardNum.toString());
-    var minPayment=(Number(currentBalance)/100 ) * 1.5;
-    response='Your total balance is $' + String(currentBalance) + 'Your minimum payment is $' + String(minPayment)+ '. ';
+    const minPay= String(min(25,currentBalance));
+    response='Your total balance is $' + String(currentBalance) + '. Your minimum payment is $' +minPay + '. ';
     const amountPaid = number.toString();
     var newBal=Number(currentBalance) - Number(number);
     newBal=newBal.toFixed(2);
     var updateSingle = currRef.update({balance: newBal.toString()});
     currentBalance=newBal;
-    response=response+ 'Your payment of $ ' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString()+'. ';
+    response=response+ 'Your payment of $' + amountPaid.toString() + ' has been issued. Your new current balance is $' + newBal.toString()+'. ';
     response=response+' Thank you for your payment. What else would you like to do?';
   }else{
     response="Sorry! I didn't catch that. Please say something like, 'I want to make a payment of $25'.";
@@ -288,7 +297,7 @@ app.intent('Help', (conv, {Help_input})=> {
     response=greeting;
   }
   if (Help_input !== '') {
-    response= response +"I'm a virtual financial assistant." +
+    response= response +"I'm Ouni, I'm a virtual financial assistant." +
     " I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier.. ";
   }
   response=response + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
@@ -316,17 +325,16 @@ app.intent('Default Welcome Intent', (conv) => {
 
 
 app.intent('Good bye', (conv) =>{
-  //var debugmsg='this is for debugging, time is '+ time.toString()+' . ';
   if (currenttime < 5){
-    greeting=' Bye for now.. ';
+    greeting_bye=' Bye for now.. ';
   } else if(currenttime < 10){
-    greeting=' Have a good day! ';
+    greeting_bye=' Have a good day! ';
   }else if(currenttime <19){
-    greeting=' Enjoy the rest of your day! ';
+    greeting_bye=' Enjoy the rest of your day! ';
   }else if(currenttime <23){
-    greeting=' Have a good night! ';
+    greeting_bye=' Have a good night! ';
   }else{
-    greeting=' Until next time.. ';
+    greeting_bye=' Until next time.. ';
   }
 
   currentCardNum = '';
@@ -337,8 +345,9 @@ app.intent('Good bye', (conv) =>{
   cardChecked=false;
   pinConfirmed=false;
   welcomed=false;
-  conv.close(greeting);
+  conv.close(greeting_bye);
 });
+//console.log(currenttime);
 
 
 // Set the DialogflowApp object to handle the HTTPS POST request.
