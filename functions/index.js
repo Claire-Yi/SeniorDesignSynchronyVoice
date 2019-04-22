@@ -72,7 +72,7 @@ app.intent('Card Pin', (conv, {number}) => {
 
 
 app.intent('Lock Card', (conv) => {
-  var fraud='You can call 8608178983 if you want to report a fraud. '
+  var fraud='You can call (860)-817-8983 if you want to report a fraud. '
   var response='';
   if (cardChecked===false){
     response='Please say the last four digits of your card. ';
@@ -112,39 +112,34 @@ app.intent('Unlock Card', (conv) => {
 
 
 app.intent('Search Transaction', (conv, {Product}) => {
+
   if (cardChecked===false){
     conv.ask('Please say the last four digits of your card first. ');
     return null;
   } else if (pinConfirmed===false){
     conv.ask('You cannot search transaction before entering the pin! Please say the pin number of your card first. ');
   } else if  (currentCardLocked) {
-    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to search your transaction. ');
+    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first, to search your transaction. ');
   }else{
+    var totalSpending=0;
     const theProduct = Product.toLowerCase()
     const currRef = dbRef.doc(currentCardNum.toString()).collection('Transactions');
     var theResponse = '';
     return currRef.where('Item', '==', theProduct).get()
     .then((snapshot) => {
       if (snapshot.empty) {
-        conv.ask('Hmm. It looks like there are no recent purchases on ' + theProduct + '. ');
-        conv.ask('Anything else you need?');
+        conv.ask('Hmm. It looks like there are no recent purchases on ' + theProduct + '. Anything else you need? ');
         return null;
       }
 
-      var totalSpending=0;
 
       snapshot.forEach(doc => {
         const {Date, Item, Price, Timestamp} = doc.data();
-        totalSpending+=Price;
-      });
-        conv.ask('You spent $'+ totalSpending+ ' on ' + Product+'. ');
-
-      snapshot.forEach(doc => {
-        const {Date, Item, Price, Timestamp} = doc.data();
+        totalSpending=totalSpending+Price;
         theResponse = theResponse + 'There was a transaction on ' + Date + ' for $' + Price + '. ';
       });
-
-      theResponse = theResponse + 'Anything else you need help with?';
+      var totalSpent='You spent $'+ totalSpending+ ' on ' + Product+'. ';
+      theResponse = totalSpent+ theResponse + ' Anything else you need help with?';
       conv.ask(theResponse);
       return null;
     }).catch((e) => {
@@ -162,7 +157,7 @@ app.intent('Current Balance', (conv) => {
   } else if (pinConfirmed===false){
     conv.ask('You cannot check your balance before entering the pin! Please say the pin number of your card first. ');
   } else if  (currentCardLocked) {
-    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to check your balance. ');
+    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first, to check your balance. ');
   }else {
     if(currentBalance.toString() !== ''){
       conv.ask('You owe $' + currentBalance.toString() + '. What would you like to do' + currentName + '?');
@@ -179,7 +174,7 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
   } else if (pinConfirmed===false){
     conv.ask('You cannot check your balance before entering the pin! Please say the pin number of your card first. ');
   } else if  (currentCardLocked) {
-    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to check your transactions. ');
+    conv.ask('You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first, to check your transactions. ');
   }else {
     var today = new Date();
     var currTimeStamp = Math.round((new Date()).getTime() / 1000);
@@ -217,7 +212,6 @@ app.intent('SearchByDate', (conv, {theNumber, DateString}) => {
     .then((snapshot) => {
       if (snapshot.empty) {
         conv.ask('The card ending in ' + currentCardNum.toString() + ' has no transactions in that timeframe. ');
-        conv.ask('What else would you like to do?');
         return null;
       }
 
@@ -248,14 +242,14 @@ app.intent('Change Pin', (conv, {theNumber}) => {
   } else if (pinConfirmed===false){
     response='You cannot change your pin before entering the current one! Please say the pin number of your card first. ';
   }else if  (currentCardLocked) {
-    response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to change your pin. ';
+    response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first, to change your pin. ';
   }else {
     const currRef = dbRef.doc(currentCardNum.toString());
     if(theNumber.toString() !== ''){
       var updateSingle = currRef.update({cardPin: theNumber.toString()});
       response='Your pin has been changed to ' + theNumber.toString() +'. Is there anything else you need' + currentName +'?';
     }else{
-      response="Oops, sorry I didn't get that! Please try again. ";
+      response="Oops, sorry I didn't get that! Please say something like 'Change pin to 1234'. ";
     }
   }
   conv.ask(response);
@@ -271,11 +265,11 @@ app.intent('Make Payment', (conv, {number})=> {
   } else if (pinConfirmed===false){
     response='You cannot make a payment without saying your cards PIN! Please say the PIN number of your card.';
   }else if (currentCardLocked) {
-    response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first to make a payment. ';
+    response='You card ending in ' +currentCardNum.toString() + ' is locked. Please unlock your card first, to make a payment. ';
   }else if (number !== ''){
     const currRef = dbRef.doc(currentCardNum.toString());
-    const minPay= String(min(25,currentBalance));
-    response='Your total balance is $' + String(currentBalance) + '. Your minimum payment is $' +minPay + '. ';
+    var minPay= Math.min(25,currentBalance);
+    response='Your total balance is $' + String(currentBalance) + '. Your minimum payment is $' +String(minPay) + '. ';
     const amountPaid = number.toString();
     var newBal=Number(currentBalance) - Number(number);
     newBal=newBal.toFixed(2);
@@ -301,7 +295,7 @@ app.intent('Help', (conv, {Help_input})=> {
     " I'm always here to answer your questions, help you stay on top of your finances and make everyday baking easier.. ";
   }
   response=response + 'I can help with things like making a payment, checking your balance, locking or unlocking your card, or checking your past transactions. ';
-  response=response+ "You can say 'pay my bill' to make a payment or 'How much I spent on gas?' to check your recent gas purchases. ";
+  response=response+ "You can say something like 'pay my bill' to make a payment or 'How much I spent on gas?' to check your recent gas purchases. ";
   response=response+ 'What would you like to do'+ currentName + '?';
   conv.ask(response);
 });
